@@ -1,0 +1,54 @@
+name: TypeScript SDK RC
+
+on:
+  push:
+    branches: [rc]
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm run test:unit
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: E2E tests
+        env:
+          MUXI_SDK_E2E_SERVER_URL: ${{ secrets.MUXI_SDK_E2E_SERVER_URL }}
+          MUXI_SDK_E2E_KEY_ID: ${{ secrets.MUXI_SDK_E2E_KEY_ID }}
+          MUXI_SDK_E2E_SECRET_KEY: ${{ secrets.MUXI_SDK_E2E_SECRET_KEY }}
+          MUXI_SDK_E2E_FORMATION_ID: ${{ secrets.MUXI_SDK_E2E_FORMATION_ID }}
+          MUXI_SDK_E2E_CLIENT_KEY: ${{ secrets.MUXI_SDK_E2E_CLIENT_KEY }}
+          MUXI_SDK_E2E_ADMIN_KEY: ${{ secrets.MUXI_SDK_E2E_ADMIN_KEY }}
+        run: |
+          : "${MUXI_SDK_E2E_SERVER_URL:?set MUXI_SDK_E2E_SERVER_URL}"
+          : "${MUXI_SDK_E2E_KEY_ID:?set MUXI_SDK_E2E_KEY_ID}"
+          : "${MUXI_SDK_E2E_SECRET_KEY:?set MUXI_SDK_E2E_SECRET_KEY}"
+          : "${MUXI_SDK_E2E_FORMATION_ID:?set MUXI_SDK_E2E_FORMATION_ID}"
+          : "${MUXI_SDK_E2E_CLIENT_KEY:?set MUXI_SDK_E2E_CLIENT_KEY}"
+          : "${MUXI_SDK_E2E_ADMIN_KEY:?set MUXI_SDK_E2E_ADMIN_KEY}"
+          npm run test:e2e
