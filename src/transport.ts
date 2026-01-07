@@ -2,6 +2,7 @@ import { buildAuthHeader } from "./auth.js";
 import { unwrapEnvelope } from "./envelope.js";
 import { ConnectionError, MuxiError } from "./errors.js";
 import { version } from "./version.js";
+import { randomUUID } from "crypto";
 
 export interface TransportOptions {
   baseUrl: string;
@@ -39,7 +40,7 @@ function baseHeaders(opts: TransportOptions, method: string, pathForAuth: string
     "Content-Type": "application/json",
     "X-Muxi-SDK": `typescript/${version}`,
     "X-Muxi-Client": `node-${process.version}`,
-    "X-Muxi-Idempotency-Key": crypto.randomUUID(),
+    "X-Muxi-Idempotency-Key": randomUUID(),
   };
   if (opts.keyId && opts.secretKey) {
     headers.Authorization = buildAuthHeader(opts.keyId.trim(), opts.secretKey.trim(), method, pathForAuth);
