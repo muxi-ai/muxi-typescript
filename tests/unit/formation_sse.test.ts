@@ -8,10 +8,10 @@ test("Formation SSE parser decodes data lines", async () => {
   // monkey-patch internal call
   const stream = (fc as any).transport.streamSse;
   (fc as any).transport.streamSse = async function* () {
-    yield { event: "message", data: "{\"ok\":true}" } as any;
+    yield { ok: true } as any;
   };
   const iter = fc.streamLogs();
   const { value } = await iter.next();
-  assert.deepStrictEqual(value, { event: "message", data: '{"ok":true}' });
+  assert.deepStrictEqual(value, { ok: true });
   (fc as any).transport.streamSse = stream;
 });

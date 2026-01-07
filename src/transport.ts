@@ -1,6 +1,6 @@
 import { buildAuthHeader } from "./auth.js";
 import { unwrapEnvelope } from "./envelope.js";
-import { ConnectionError, MuxiError } from "./errors.js";
+import { ConnectionError, MuxiError, mapError } from "./errors.js";
 import { version } from "./version.js";
 import { randomUUID } from "crypto";
 
@@ -101,7 +101,7 @@ export class Transport {
             attempt += 1;
             continue;
           }
-          throw new MuxiError(code, message, resp.status, payload);
+          throw mapError(resp.status, code, message, payload, retryAfter);
         }
 
         const data = await parseJson(resp);

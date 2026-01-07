@@ -1,5 +1,5 @@
 import { unwrapEnvelope } from "./envelope.js";
-import { ConnectionError, MuxiError } from "./errors.js";
+import { ConnectionError, MuxiError, mapError } from "./errors.js";
 import { version } from "./version.js";
 import { randomUUID } from "crypto";
 
@@ -107,6 +107,7 @@ class FormationTransport {
           const payload = await parseJson(resp);
           const code = (payload as any)?.code || (payload as any)?.error || "ERROR";
           const message = (payload as any)?.message || resp.statusText;
+          const retryAfter = Number(resp.headers.get("Retry-After") || 0);
           if (RETRY_STATUS.has(resp.status) && attempt < this.maxRetries) {
             const sleepFor = Math.min(backoff, 30_000);
             await new Promise((r) => setTimeout(r, sleepFor));
@@ -114,7 +115,7 @@ class FormationTransport {
             attempt += 1;
             continue;
           }
-          throw new MuxiError(code, message, resp.status, payload);
+          throw mapError(resp.status, code, message, payload, retryAfter);
         }
         const data = await parseJson(resp);
         return unwrapEnvelope<T>(data);
@@ -144,7 +145,7 @@ class FormationTransport {
     const resp = await fetch(url, { method, headers, body });
     if (!resp.ok || !resp.body) {
       const payload = await parseJson(resp);
-      throw new MuxiError((payload as any)?.code || "STREAM_ERROR", (payload as any)?.message || resp.statusText, resp.status, payload);
+      throw mapError(resp.status, (payload as any)?.code || "STREAM_ERROR", (payload as any)?.message || resp.statusText, payload);
     }
     if (this.debug) console.debug(`${method} ${fullPath} -> stream ${resp.status}`);
     const reader = resp.body.getReader();
