@@ -1,0 +1,43 @@
+{
+  "name": "@muxi-ai/muxi-typescript",
+  "version": "0.0.0",
+  "description": "Official MUXI SDK for TypeScript",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "test": "npm run build && node -e \"console.log('tests pending')\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muxi-ai/muxi-typescript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/muxi-ai/muxi-typescript/issues"
+  },
+  "homepage": "https://github.com/muxi-ai/muxi-typescript#readme",
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}
