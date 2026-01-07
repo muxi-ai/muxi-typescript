@@ -159,18 +159,12 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          registry-url: https://registry.npmjs.org
-          scope: '@muxi-ai'
-          always-auth: true
 
       - name: Install
         run: npm ci
 
       - name: Build
         run: npm run build
-
-      - name: Verify npm identity (OIDC)
-        run: npm whoami --registry=https://registry.npmjs.org || true
 
       - name: Publish to npm (Trusted Publishing)
         run: npm publish --access public --provenance
