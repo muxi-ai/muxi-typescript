@@ -1,8 +1,8 @@
 {
   "name": "@muxi-ai/muxi-typescript",
-  "version": "0.0.0",
+  "version": "0.20260107.0",
   "description": "Official MUXI SDK for TypeScript",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -38,6 +38,7 @@
     "url": "https://github.com/muxi-ai/muxi-typescript/issues"
   },
   "homepage": "https://github.com/muxi-ai/muxi-typescript#readme",
+  "author": "MUXI Team <dev@muxi.org>",
   "devDependencies": {
     "@types/node": "^20.11.24",
     "ts-node": "^10.9.2",

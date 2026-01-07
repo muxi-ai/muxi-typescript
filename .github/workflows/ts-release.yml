@@ -75,6 +75,7 @@ jobs:
           npm run test:e2e
 
   version:
+    needs: test
     if: "${{ !startsWith(github.event.head_commit.message, 'chore: release') && (github.event_name == 'push' || inputs.run_version) }}"
     runs-on: ubuntu-latest
     permissions:
@@ -139,6 +140,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          registry-url: https://registry.npmjs.org
 
       - name: Install
         run: npm ci
@@ -146,12 +148,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish to npm
-        env:
-          NPM_TOKEN: ${{ secrets.MUXI_NPM_TOKEN }}
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          npm publish --access public --provenance
+      - name: Publish to npm (Trusted Publishing)
+        run: npm publish --access public --provenance
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
