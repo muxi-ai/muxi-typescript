@@ -103,13 +103,13 @@ jobs:
           fi
           next="${major}.${today}.${nextpatch}"
           echo "version=$next" >> $GITHUB_OUTPUT
-          node -e "const fs=require('fs'); const next=process.env.NEXT||'$next'; const path='src/version.ts'; const text=fs.readFileSync(path,'utf8').replace(/version\s*=\s*\"[^\"]+\"/, 'version = \"'+next+'\"'); fs.writeFileSync(path,text);"
+          node -e "const fs=require('fs'); const next='$next'; fs.writeFileSync('src/version.ts',`export const version = \"${next}\";\n`); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.version=next; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2)+'\n');"
 
       - name: Commit version bump
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/version.ts
+          git add src/version.ts package.json
           git commit -m "chore: release v${{ steps.version.outputs.version }}"
           git push origin HEAD:main
 
@@ -141,6 +141,7 @@ jobs:
           node-version: '18'
           cache: 'npm'
           registry-url: https://registry.npmjs.org
+          scope: '@muxi-ai'
 
       - name: Install
         run: npm ci
