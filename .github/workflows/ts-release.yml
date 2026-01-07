@@ -91,25 +91,44 @@ jobs:
       - name: Compute next version (ScalVer)
         id: version
         run: |
-          current=$(node -e "const fs=require('fs'); const m=fs.readFileSync('src/version.ts','utf8').match(/version\s*=\s*\"([^\"]+)\"/); if(!m) { process.exit(1);} console.log(m[1]);")
-          major=$(echo "$current" | cut -d. -f1)
-          cdate=$(echo "$current" | cut -d. -f2)
-          cpatch=$(echo "$current" | cut -d. -f3)
-          today=$(date -u +%Y%m%d)
-          if [ "$cdate" = "$today" ]; then
-            nextpatch=$((cpatch + 1))
-          else
-            nextpatch=0
-          fi
-          next="${major}.${today}.${nextpatch}"
-          echo "version=$next" >> $GITHUB_OUTPUT
-          node -e "const fs=require('fs'); const next='$next'; fs.writeFileSync('src/version.ts',`export const version = \"${next}\";\n`); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.version=next; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2)+'\n');"
+          python - <<'PY'
+import json, re, datetime, os
+from pathlib import Path
+
+version_path = Path('src/version.ts')
+m = re.search(r'version\s*=\s*"([^"]+)"', version_path.read_text())
+if not m:
+    raise SystemExit("version not found")
+current = m.group(1)
+major, cdate, cpatch = current.split('.')
+today = datetime.datetime.utcnow().strftime('%Y%m%d')
+patch = int(cpatch) + 1 if cdate == today else 0
+next_version = f"{major}.{today}.{patch}"
+
+version_path.write_text(f'export const version = "{next_version}";\n')
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/version.ts package.json package-lock.json || true
+pkg_path.write_text(json.dumps(pkg, indent=2) + '\n')
+
+lock_path = Path('package-lock.json')
+if lock_path.exists():
+    lock = json.loads(lock_path.read_text())
+    lock['version'] = next_version
+    if '' in lock.get('packages', {}):
+        lock['packages']['']['version'] = next_version
+    lock_path.write_text(json.dumps(lock, indent=2) + '\n')
+
+out_path = os.environ.get('GITHUB_OUTPUT')
+if not out_path:
+    raise SystemExit('GITHUB_OUTPUT not set')
+with open(out_path, 'a', encoding='utf-8') as fh:
+    fh.write(f"version={next_version}\n")
+PY
 
       - name: Commit version bump
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/version.ts package.json
           git commit -m "chore: release v${{ steps.version.outputs.version }}"
           git push origin HEAD:main
 
