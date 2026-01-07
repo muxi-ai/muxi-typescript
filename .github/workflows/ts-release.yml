@@ -157,8 +157,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
 
       - name: Install
         run: npm ci
@@ -167,7 +170,7 @@ jobs:
         run: npm run build
 
       - name: Publish to npm (Trusted Publishing)
-        run: npm publish --access public --provenance
+        run: npm publish --access public
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
