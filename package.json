@@ -19,7 +19,9 @@
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "test": "npm run build && node -e \"console.log('tests pending')\""
+    "test": "npm run build && npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test --loader ts-node/esm tests/unit/*.test.ts",
+    "test:e2e": "node --test --loader ts-node/esm tests/e2e/*.test.ts"
   },
   "engines": {
     "node": ">=18"
@@ -38,6 +40,7 @@
   "homepage": "https://github.com/muxi-ai/muxi-typescript#readme",
   "devDependencies": {
     "@types/node": "^20.11.24",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
 }
