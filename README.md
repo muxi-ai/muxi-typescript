@@ -1,17 +1,23 @@
 # MUXI TypeScript SDK
 
-Official TypeScript/Node SDK for MUXI.
+Official TypeScript/Node SDK for [MUXI](https://muxi.org) — infrastructure for AI agents.
 
-## Install
+**Highlights**
+- Fetch-based HTTP transport (Node 18+), automatic idempotency, SDK/client headers
+- Formation client/admin key auth; server HMAC auth
+- SSE helpers for chat/audio streams and deploy/log tails
+- Retries on 429/5xx/connection errors with exponential backoff
+
+## Installation
 
 ```bash
 npm install @muxi-ai/muxi-typescript
 ```
 
-## Quick start
+## Quick Start (server)
 
 ```ts
-import { ServerClient, FormationClient } from "@muxi-ai/muxi-typescript";
+import { ServerClient } from "@muxi-ai/muxi-typescript";
 
 const server = new ServerClient({
   url: "https://server.example.com",
@@ -19,25 +25,43 @@ const server = new ServerClient({
   secretKey: process.env.MUXI_SECRET_KEY!,
 });
 
-const status = await server.status();
-console.log(status);
+console.log(await server.status());
+```
+
+## Quick Start (formation)
+
+```ts
+import { FormationClient } from "@muxi-ai/muxi-typescript";
 
 const formation = new FormationClient({
   serverUrl: "https://server.example.com",
   formationId: "your-formation",
   clientKey: process.env.MUXI_CLIENT_KEY!,
+  adminKey: process.env.MUXI_ADMIN_KEY!,
 });
 
-const reply = await formation.chat({ message: "hello" });
-console.log(reply);
+console.log(await formation.health());
 
 // Streaming chat (SSE)
-for await (const line of formation.chatStream({ message: "stream" })) {
-  console.log(line);
+for await (const evt of formation.chatStream({ message: "hello" })) {
+  console.log(evt);
+  break;
 }
 ```
 
-## Notes
-- Node 18+ required (built-in `fetch`).
-- Idempotency headers are sent automatically on every request.
-- HMAC auth is handled for server RPCs; formation uses client/admin keys.
+## Formation base URL override
+
+- Default: `serverUrl + /api/{formationId}/v1`
+- Override: set `baseUrl` (e.g., `http://localhost:9012/v1` for direct formation)
+
+## Auth & headers
+
+- Server: HMAC with `keyId`/`secretKey` on `/rpc/*` calls.
+- Formation: `X-MUXI-CLIENT-KEY` or `X-MUXI-ADMIN-KEY`; optional `X-Muxi-User-ID` via `userId` param.
+- Idempotency: `X-Muxi-Idempotency-Key` auto-generated on every request.
+- SDK/Client headers set automatically (`X-Muxi-SDK`, `X-Muxi-Client`).
+
+## Streaming
+
+- Chat/audio: `chatStream` / `audioChatStream` return async generators of SSE events.
+- Deploy/log streams: `deployFormationStream`, `updateFormationStream`, `streamFormationLogs`, etc.
