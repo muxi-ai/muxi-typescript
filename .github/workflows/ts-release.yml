@@ -92,9 +92,6 @@ jobs:
         id: version
         run: |
           python - <<'PY'
-pkg_path = Path('package.json')
-pkg = json.loads(pkg_path.read_text())
-pkg['version'] = next_version
           import json, re, datetime, os
           from pathlib import Path
 
@@ -128,7 +125,7 @@ pkg['version'] = next_version
               raise SystemExit('GITHUB_OUTPUT not set')
           with open(out_path, 'a', encoding='utf-8') as fh:
               fh.write(f"version={next_version}\n")
-PY
+          PY
 
       - name: Commit version bump
         run: |
