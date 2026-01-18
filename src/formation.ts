@@ -206,7 +206,7 @@ export class FormationClient {
   // Secrets
   getSecrets() { return this.transport.requestJson("GET", "/secrets", { useAdmin: true }); }
   getSecret(key: string) { return this.transport.requestJson("GET", `/secrets/${key}`, { useAdmin: true }); }
-  setSecret(key: string, value: string) { return this.transport.requestJson("POST", `/secrets/${key}`, { useAdmin: true, body: { value } }); }
+  setSecret(key: string, value: string) { return this.transport.requestJson("PUT", `/secrets/${key}`, { useAdmin: true, body: { value } }); }
   deleteSecret(key: string) { return this.transport.requestJson("DELETE", `/secrets/${key}`, { useAdmin: true }); }
 
   // Chat
@@ -230,18 +230,17 @@ export class FormationClient {
 
   // Memory
   getMemoryConfig() { return this.transport.requestJson("GET", "/memory", { useAdmin: true }); }
-  getMemories(userId: string, limit?: number) { return this.transport.requestJson("GET", "/memory/user", { useAdmin: false, params: { user_id: userId, limit } }); }
-  addMemory(userId: string, type: string, detail: string) { return this.transport.requestJson("POST", "/memory", { useAdmin: false, body: { user_id: userId, type, detail } }); }
-  deleteMemory(userId: string, memoryId: string) { return this.transport.requestJson("DELETE", `/memory/${memoryId}`, { useAdmin: false, params: { user_id: userId } }); }
-  getUserBuffer(userId: string) { return this.transport.requestJson("GET", `/memory/buffer/${userId}`, { useAdmin: false }); }
-  clearUserBuffer(userId: string) { return this.transport.requestJson("DELETE", `/memory/buffer/${userId}`, { useAdmin: false }); }
-  clearSessionBuffer(userId: string, sessionId: string) { return this.transport.requestJson("DELETE", `/memory/buffer/${userId}/${sessionId}`, { useAdmin: false }); }
+  getMemories(userId: string, limit?: number) { return this.transport.requestJson("GET", "/memories", { useAdmin: false, params: { user_id: userId, limit }, userId }); }
+  addMemory(userId: string, type: string, detail: string) { return this.transport.requestJson("POST", "/memories", { useAdmin: false, body: { user_id: userId, type, detail }, userId }); }
+  deleteMemory(userId: string, memoryId: string) { return this.transport.requestJson("DELETE", `/memories/${memoryId}`, { useAdmin: false, params: { user_id: userId }, userId }); }
+  getUserBuffer(userId: string) { return this.transport.requestJson("GET", "/memory/buffer", { useAdmin: false, params: { user_id: userId }, userId }); }
+  clearUserBuffer(userId: string) { return this.transport.requestJson("DELETE", "/memory/buffer", { useAdmin: false, params: { user_id: userId }, userId }); }
+  clearSessionBuffer(userId: string, sessionId: string) { return this.transport.requestJson("DELETE", `/memory/buffer/${sessionId}`, { useAdmin: false, params: { user_id: userId }, userId }); }
   clearAllBuffers() { return this.transport.requestJson("DELETE", "/memory/buffer", { useAdmin: true }); }
-  getMemoryBuffers() { return this.transport.requestJson("GET", "/memory/buffers", { useAdmin: true }); }
   getBufferStats() { return this.transport.requestJson("GET", "/memory/stats", { useAdmin: true }); }
 
   // Scheduler
-  getSchedulerConfig() { return this.transport.requestJson("GET", "/scheduler/config", { useAdmin: true }); }
+  getSchedulerConfig() { return this.transport.requestJson("GET", "/scheduler", { useAdmin: true }); }
   getSchedulerJobs(userId: string) { return this.transport.requestJson("GET", "/scheduler/jobs", { useAdmin: true, params: { user_id: userId } }); }
   getSchedulerJob(jobId: string) { return this.transport.requestJson("GET", `/scheduler/jobs/${jobId}`, { useAdmin: true }); }
   createSchedulerJob(jobType: string, schedule: string, message: string, userId: string) {
@@ -251,9 +250,6 @@ export class FormationClient {
 
   // Async / logging / a2a
   getAsyncConfig() { return this.transport.requestJson("GET", "/async", { useAdmin: true }); }
-  getAsyncJobs() { return this.transport.requestJson("GET", "/async/jobs", { useAdmin: true }); }
-  getAsyncJob(jobId: string) { return this.transport.requestJson("GET", `/async/jobs/${jobId}`, { useAdmin: true }); }
-  cancelAsyncJob(jobId: string) { return this.transport.requestJson("DELETE", `/async/jobs/${jobId}`, { useAdmin: true }); }
   getA2AConfig() { return this.transport.requestJson("GET", "/a2a", { useAdmin: true }); }
   getLoggingConfig() { return this.transport.requestJson("GET", "/logging", { useAdmin: true }); }
   getLoggingDestinations() { return this.transport.requestJson("GET", "/logging/destinations", { useAdmin: true }); }
@@ -264,8 +260,7 @@ export class FormationClient {
   getCredential(credentialId: string, userId: string) { return this.transport.requestJson("GET", `/credentials/${credentialId}`, { useAdmin: false, userId }); }
   createCredential(userId: string, payload: Record<string, any>) { return this.transport.requestJson("POST", "/credentials", { useAdmin: false, userId, body: payload }); }
   deleteCredential(credentialId: string, userId: string) { return this.transport.requestJson("DELETE", `/credentials/${credentialId}`, { useAdmin: false, userId }); }
-  getUserIdentifiers() { return this.transport.requestJson("GET", "/users/identifiers", { useAdmin: true }); }
-  getUserIdentifiersForUser(userId: string) { return this.transport.requestJson("GET", `/users/${userId}/identifiers`, { useAdmin: true }); }
+  getUserIdentifiersForUser(userId: string) { return this.transport.requestJson("GET", `/users/identifiers/${userId}`, { useAdmin: true }); }
   linkUserIdentifier(muxiUserId: string, identifiers: any[]) { return this.transport.requestJson("POST", "/users/identifiers", { useAdmin: true, body: { muxi_user_id: muxiUserId, identifiers } }); }
   unlinkUserIdentifier(identifier: string) { return this.transport.requestJson("DELETE", `/users/identifiers/${identifier}`, { useAdmin: true }); }
 
@@ -284,10 +279,10 @@ export class FormationClient {
   clearAuditLog() { return this.transport.requestJson("DELETE", "/audit", { useAdmin: true, params: { confirm: "clear-audit-log" } }); }
 
   // Events / logs streaming
-  streamEvents(userId: string) { return this.transport.streamSse("GET", `/events/${userId}`, { useAdmin: false }); }
-  streamRequest(userId: string, sessionId: string, requestId: string) { return this.transport.streamSse("GET", `/requests/${requestId}/stream`, { useAdmin: false, params: { user_id: userId, session_id: sessionId } }); }
-  streamLogs(filters?: Record<string, any>) { return this.transport.streamSse("POST", "/logs/stream", { useAdmin: true, body: filters || {} }); }
+  streamEvents(userId: string) { return this.transport.streamSse("GET", "/events", { useAdmin: false, params: { user_id: userId }, userId }); }
+  streamRequest(userId: string, sessionId: string, requestId: string) { return this.transport.streamSse("GET", `/events/${sessionId}/${requestId}`, { useAdmin: false, userId }); }
+  streamLogs(filters?: Record<string, any>) { return this.transport.streamSse("GET", "/logs", { useAdmin: true, params: filters }); }
 
   // Resolve user
-  resolveUser(identifier: string, createUser = false) { return this.transport.requestJson("GET", "/users/resolve", { useAdmin: false, params: { identifier, create_user: String(createUser).toLowerCase() } }); }
+  resolveUser(identifier: string, createUser = false) { return this.transport.requestJson("POST", "/users/resolve", { useAdmin: false, body: { identifier, create_user: createUser } }); }
 }
