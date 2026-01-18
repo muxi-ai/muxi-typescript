@@ -1,7 +1,7 @@
 import { unwrapEnvelope } from "./envelope.js";
 import { ConnectionError, MuxiError, mapError } from "./errors.js";
 import { version } from "./version.js";
-import { randomUUID } from "crypto";
+import { generateUUID, getClientInfo } from "./platform.js";
 
 export interface FormationClientOptions {
   formationId: string;
@@ -71,8 +71,8 @@ class FormationTransport {
   private headers(useAdmin: boolean, userId?: string, extra?: Record<string, string>) {
     const headers: Record<string, string> = {
       "X-Muxi-SDK": `typescript/${version}`,
-      "X-Muxi-Client": `node-${process.version}`,
-      "X-Muxi-Idempotency-Key": randomUUID(),
+      "X-Muxi-Client": getClientInfo(),
+      "X-Muxi-Idempotency-Key": generateUUID(),
     };
     if (useAdmin) {
       if (!this.adminKey) throw new Error("admin key required");
