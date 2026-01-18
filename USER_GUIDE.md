@@ -113,6 +113,65 @@ Error types: `AuthenticationError`, `AuthorizationError`, `NotFoundError`, `Vali
 | Logs | `getFormationLogs`, `getServerLogs` |
 | Streaming | `streamServerLogs`, `streamDeployFormation`, `streamUpdateFormation` |
 
+## Webhook Verification
+
+For async operations, MUXI delivers results via webhooks. The SDK provides helpers to verify signatures and parse payloads.
+
+```typescript
+import { webhook } from '@muxi-ai/muxi-typescript';
+
+app.post('/webhooks/muxi', (req, res) => {
+    const payload = req.rawBody; // Buffer or string
+    const signature = req.headers['x-muxi-signature'] as string;
+
+    // Verify signature
+    if (!webhook.verifySignature(payload, signature, WEBHOOK_SECRET)) {
+        return res.status(401).send('Invalid signature');
+    }
+
+    // Parse into typed object
+    const event = webhook.parse(payload);
+
+    switch (event.status) {
+        case 'completed':
+            for (const item of event.content) {
+                if (item.type === 'text') console.log(item.text);
+            }
+            break;
+        case 'failed':
+            console.log(`Error: ${event.error?.message}`);
+            break;
+        case 'awaiting_clarification':
+            console.log(`Question: ${event.clarification?.question}`);
+            break;
+    }
+
+    res.json({ status: 'received' });
+});
+```
+
+### Webhook Functions
+
+| Function | Description |
+|----------|-------------|
+| `webhook.verifySignature(payload, signature, secret, tolerance?)` | Verify HMAC-SHA256 signature and timestamp |
+| `webhook.parse(payload)` | Parse payload into `WebhookEvent` object |
+
+### WebhookEvent Interface
+
+```typescript
+interface WebhookEvent {
+  requestId: string;
+  status: 'completed' | 'failed' | 'awaiting_clarification';
+  timestamp: number;
+  content: ContentItem[];
+  error?: ErrorDetails;
+  clarification?: Clarification;
+  processingTime?: number;
+  raw: Record<string, unknown>;
+}
+```
+
 ## Troubleshooting
 
 - **Connection errors**: Ensure URL and keys are correct; for streaming, check proxies/firewalls.
