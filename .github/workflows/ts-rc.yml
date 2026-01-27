@@ -32,29 +32,31 @@ jobs:
     needs: unit
     permissions:
       contents: read
+    env:
+      MUXI_SDK_E2E_SERVER_URL: ${{ secrets.MUXI_SDK_E2E_SERVER_URL }}
     steps:
+      - name: Skip if no test server configured
+        if: ${{ env.MUXI_SDK_E2E_SERVER_URL == '' }}
+        run: echo "::notice::E2E tests skipped — MUXI_SDK_E2E_SERVER_URL not set"
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        if: ${{ env.MUXI_SDK_E2E_SERVER_URL != '' }}
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v4
+        if: ${{ env.MUXI_SDK_E2E_SERVER_URL != '' }}
         with:
           node-version: '18'
           cache: 'npm'
 
       - name: Install
+        if: ${{ env.MUXI_SDK_E2E_SERVER_URL != '' }}
         run: npm ci
 
       - name: E2E tests
+        if: ${{ env.MUXI_SDK_E2E_SERVER_URL != '' }}
         env:
-          MUXI_SDK_E2E_SERVER_URL: ${{ secrets.MUXI_SDK_E2E_SERVER_URL }}
           MUXI_SDK_E2E_KEY_ID: ${{ secrets.MUXI_SDK_E2E_KEY_ID }}
           MUXI_SDK_E2E_SECRET_KEY: ${{ secrets.MUXI_SDK_E2E_SECRET_KEY }}
           MUXI_SDK_E2E_FORMATION_ID: ${{ secrets.MUXI_SDK_E2E_FORMATION_ID }}
           MUXI_SDK_E2E_CLIENT_KEY: ${{ secrets.MUXI_SDK_E2E_CLIENT_KEY }}
           MUXI_SDK_E2E_ADMIN_KEY: ${{ secrets.MUXI_SDK_E2E_ADMIN_KEY }}
-        run: |
-          : "${MUXI_SDK_E2E_SERVER_URL:?set MUXI_SDK_E2E_SERVER_URL}"
-          : "${MUXI_SDK_E2E_KEY_ID:?set MUXI_SDK_E2E_KEY_ID}"
-          : "${MUXI_SDK_E2E_SECRET_KEY:?set MUXI_SDK_E2E_SECRET_KEY}"
-          : "${MUXI_SDK_E2E_FORMATION_ID:?set MUXI_SDK_E2E_FORMATION_ID}"
-          : "${MUXI_SDK_E2E_CLIENT_KEY:?set MUXI_SDK_E2E_CLIENT_KEY}"
-          : "${MUXI_SDK_E2E_ADMIN_KEY:?set MUXI_SDK_E2E_ADMIN_KEY}"
-          npm run test:e2e
+        run: npm run test:e2e
