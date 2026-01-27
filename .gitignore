@@ -1,2 +1,10 @@
 node_modules
 dist
+
+# OS
+.DS_Store
+
+# AI agent dirs
+.factory/
+.claude/
+.cursor/

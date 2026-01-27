@@ -26,9 +26,7 @@ on:
         type: boolean
         default: true
 
-permissions:
-  contents: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: ts-release-${{ github.ref }}
@@ -38,12 +36,14 @@ jobs:
   test:
     if: "${{ !startsWith(github.event.head_commit.message, 'chore: release') && (github.event_name == 'push' || inputs.run_tests) }}"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -83,7 +83,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           token: ${{ secrets.MUXI_RELEASE_TOKEN }}
@@ -150,12 +150,12 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: v${{ needs.version.outputs.version }}
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
@@ -173,7 +173,7 @@ jobs:
         run: npm publish --access public
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@26994186c0ac3ef5cae75ac16aa32e8153525f77 # v1
         with:
           tag_name: v${{ needs.version.outputs.version }}
           name: v${{ needs.version.outputs.version }}
@@ -187,7 +187,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: develop
           fetch-depth: 0
@@ -209,7 +209,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout parent sdks repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           repository: muxi-ai/sdks
           ref: main
