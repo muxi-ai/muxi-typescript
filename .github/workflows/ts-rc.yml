@@ -35,34 +35,29 @@ jobs:
     env:
       MUXI_SDK_E2E_SERVER_URL: ${{ secrets.MUXI_SDK_E2E_SERVER_URL }}
     steps:
-      - name: Check test server reachability
-        id: check
+      - name: Require test server
         run: |
           if [ -z "$MUXI_SDK_E2E_SERVER_URL" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "::notice::E2E tests skipped — no server URL configured"
-          elif ! curl -sf --max-time 5 "${MUXI_SDK_E2E_SERVER_URL}/ping" >/dev/null 2>&1 && \
-               ! curl -sf --max-time 5 "${MUXI_SDK_E2E_SERVER_URL}" >/dev/null 2>&1; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "::notice::E2E tests skipped — test server not reachable"
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "::error::MUXI_SDK_E2E_SERVER_URL secret is not set"
+            exit 1
           fi
+          if ! curl -sf --max-time 10 "${MUXI_SDK_E2E_SERVER_URL}/ping" >/dev/null 2>&1 && \
+             ! curl -sf --max-time 10 "${MUXI_SDK_E2E_SERVER_URL}" >/dev/null 2>&1; then
+            echo "::error::Test server is not reachable at ${MUXI_SDK_E2E_SERVER_URL}"
+            exit 1
+          fi
+          echo "Test server is reachable"
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
-        if: steps.check.outputs.skip != 'true'
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v4
-        if: steps.check.outputs.skip != 'true'
         with:
           node-version: '18'
           cache: 'npm'
 
       - name: Install
-        if: steps.check.outputs.skip != 'true'
         run: npm ci
 
       - name: E2E tests
-        if: steps.check.outputs.skip != 'true'
         env:
           MUXI_SDK_E2E_KEY_ID: ${{ secrets.MUXI_SDK_E2E_KEY_ID }}
           MUXI_SDK_E2E_SECRET_KEY: ${{ secrets.MUXI_SDK_E2E_SECRET_KEY }}
