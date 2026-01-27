@@ -82,6 +82,7 @@ jobs:
       contents: write
     outputs:
       version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -128,19 +129,14 @@ jobs:
           PY
 
       - name: Commit version bump
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src/version.ts package.json package-lock.json || true
           git commit -m "chore: release v${{ steps.version.outputs.version }}"
           git push origin HEAD:main
-          TAG="v${{ steps.version.outputs.version }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG exists"
-          else
-            git tag "$TAG"
-            git push origin "$TAG"
-          fi
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   release:
     if: "${{ !startsWith(github.event.head_commit.message, 'chore: release') && (github.event_name == 'push' || inputs.run_publish) }}"
@@ -152,7 +148,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          ref: v${{ needs.version.outputs.version }}
+          ref: ${{ needs.version.outputs.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -201,9 +197,31 @@ jobs:
           git merge origin/main --no-edit -m "chore: sync main to develop [skip ci]"
           git push origin HEAD:develop
 
+  tag:
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore: release') && (github.event_name == 'push' || inputs.run_publish) }}"
+    needs: [version, sync_develop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+          token: ${{ secrets.MUXI_RELEASE_TOKEN }}
+
+      - name: Create and push git tag
+        run: |
+          TAG="v${{ needs.version.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
   update_sdks_pointer:
     if: "${{ !startsWith(github.event.head_commit.message, 'chore: release') && (github.event_name == 'push' || inputs.run_pointer) }}"
-    needs: sync_develop
+    needs: tag
     runs-on: ubuntu-latest
     permissions:
       contents: write
