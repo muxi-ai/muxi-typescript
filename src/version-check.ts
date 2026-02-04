@@ -16,11 +16,11 @@ interface VersionCache {
 
 let hasCheckedVersion = false;
 
-function isDevMode(): boolean {
+function notificationsDisabled(): boolean {
   if (typeof process !== "undefined") {
-    return process.env.NODE_ENV !== "production";
+    return process.env.MUXI_SDK_VERSION_NOTIFICATION === "0";
   }
-  return true; // Browser dev tools usually means dev mode
+  return false;
 }
 
 function loadCache(): VersionCache {
@@ -103,7 +103,7 @@ export function checkForUpdates(responseHeaders: Headers): void {
   hasCheckedVersion = true;
 
   // Dev mode only
-  if (!isDevMode()) return;
+  if (notificationsDisabled()) return;
 
   // Check header (may not exist on old servers)
   const latest = responseHeaders.get("X-Muxi-SDK-Latest");
