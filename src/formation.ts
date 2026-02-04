@@ -2,6 +2,7 @@ import { unwrapEnvelope } from "./envelope.js";
 import { ConnectionError, MuxiError, mapError } from "./errors.js";
 import { version } from "./version.js";
 import { generateUUID, getClientInfo } from "./platform.js";
+import { checkForUpdates } from "./version-check.js";
 
 export interface FormationClientOptions {
   formationId: string;
@@ -12,6 +13,8 @@ export interface FormationClientOptions {
   timeoutMs?: number;
   maxRetries?: number;
   debug?: boolean;
+  /** @internal Undocumented - for Console telemetry */
+  _app?: "console" | "local" | "self-hosted";
 }
 
 export interface RequestOptions {
@@ -58,14 +61,16 @@ class FormationTransport {
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
   private readonly debug: boolean;
+  private readonly app?: string;
 
-  constructor(baseUrl: string, adminKey?: string, clientKey?: string, timeoutMs?: number, maxRetries?: number, debug?: boolean) {
+  constructor(baseUrl: string, adminKey?: string, clientKey?: string, timeoutMs?: number, maxRetries?: number, debug?: boolean, app?: string) {
     this.baseUrl = baseUrl;
     this.adminKey = adminKey?.trim();
     this.clientKey = clientKey?.trim();
     this.timeoutMs = timeoutMs ?? 30_000;
     this.maxRetries = maxRetries ?? 0;
     this.debug = !!debug;
+    this.app = app;
   }
 
   private headers(useAdmin: boolean, userId?: string, extra?: Record<string, string>) {
@@ -74,6 +79,9 @@ class FormationTransport {
       "X-Muxi-Client": getClientInfo(),
       "X-Muxi-Idempotency-Key": generateUUID(),
     };
+    if (this.app) {
+      headers["X-Muxi-App"] = this.app;
+    }
     if (useAdmin) {
       if (!this.adminKey) throw new Error("admin key required");
       headers["X-MUXI-ADMIN-KEY"] = this.adminKey;
@@ -103,6 +111,9 @@ class FormationTransport {
         const resp = await fetch(url, { method, headers, body, signal: controller.signal });
         clearTimeout(timeout);
         if (this.debug) console.debug(`${method} ${fullPath} -> ${resp.status}`);
+        // Check for SDK updates (non-blocking, once per session)
+        checkForUpdates(resp.headers);
+
         if (resp.status >= 400) {
           const payload = await parseJson(resp);
           const code = (payload as any)?.code || (payload as any)?.error || "ERROR";
@@ -187,7 +198,7 @@ export class FormationClient {
 
   constructor(opts: FormationClientOptions) {
     const baseUrl = computeBaseUrl(opts);
-    this.transport = new FormationTransport(baseUrl, opts.adminKey, opts.clientKey, opts.timeoutMs, opts.maxRetries, opts.debug);
+    this.transport = new FormationTransport(baseUrl, opts.adminKey, opts.clientKey, opts.timeoutMs, opts.maxRetries, opts.debug, opts._app);
   }
 
   // Health / status / config

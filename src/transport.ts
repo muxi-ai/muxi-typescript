@@ -3,6 +3,7 @@ import { unwrapEnvelope } from "./envelope.js";
 import { ConnectionError, MuxiError, mapError } from "./errors.js";
 import { version } from "./version.js";
 import { generateUUID, getClientInfo } from "./platform.js";
+import { checkForUpdates } from "./version-check.js";
 
 export interface TransportOptions {
   baseUrl: string;
@@ -11,6 +12,8 @@ export interface TransportOptions {
   timeoutMs?: number;
   maxRetries?: number;
   debug?: boolean;
+  /** @internal Undocumented - for Console telemetry */
+  app?: string;
 }
 
 export interface RequestOptions {
@@ -42,6 +45,9 @@ function baseHeaders(opts: TransportOptions, method: string, pathForAuth: string
     "X-Muxi-Client": getClientInfo(),
     "X-Muxi-Idempotency-Key": generateUUID(),
   };
+  if (opts.app) {
+    headers["X-Muxi-App"] = opts.app;
+  }
   if (opts.keyId && opts.secretKey) {
     headers.Authorization = buildAuthHeader(opts.keyId.trim(), opts.secretKey.trim(), method, pathForAuth);
   }
@@ -88,6 +94,9 @@ export class Transport {
         if (this.opts.debug) {
           console.debug(`${method} ${url} -> ${resp.status}`);
         }
+
+        // Check for SDK updates (non-blocking, once per session)
+        checkForUpdates(resp.headers);
 
         if (resp.status >= 400) {
           const payload = await parseJson(resp);

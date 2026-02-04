@@ -8,6 +8,8 @@ export interface ServerClientOptions {
   timeoutMs?: number;
   maxRetries?: number;
   debug?: boolean;
+  /** @internal Undocumented - for Console telemetry */
+  _app?: "console" | "local" | "self-hosted";
 }
 
 async function* parseSseLines(lines: AsyncGenerator<string, void, void>) {
@@ -36,6 +38,7 @@ export class ServerClient {
       timeoutMs: opts.timeoutMs,
       maxRetries: opts.maxRetries,
       debug: opts.debug,
+      app: opts._app,
     };
     this.transport = new Transport(topts);
   }
