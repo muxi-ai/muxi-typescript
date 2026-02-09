@@ -13,6 +13,8 @@ export interface FormationClientOptions {
   timeoutMs?: number;
   maxRetries?: number;
   debug?: boolean;
+  /** "live" (default) uses /api/, "draft" uses /draft/ for local dev */
+  mode?: "live" | "draft";
   /** @internal Undocumented - for Console telemetry */
   _app?: "console" | "local" | "self-hosted";
 }
@@ -29,7 +31,8 @@ const RETRY_STATUS = new Set([429, 500, 502, 503, 504]);
 function computeBaseUrl(opts: FormationClientOptions): string {
   if (opts.baseUrl) return opts.baseUrl.replace(/\/$/, "");
   if (!opts.serverUrl) throw new Error("serverUrl or baseUrl is required");
-  return `${opts.serverUrl.replace(/\/$/, "")}/api/${opts.formationId}/v1`;
+  const prefix = opts.mode === "draft" ? "draft" : "api";
+  return `${opts.serverUrl.replace(/\/$/, "")}/${prefix}/${opts.formationId}/v1`;
 }
 
 function buildUrl(baseUrl: string, path: string, params?: Record<string, any>) {
