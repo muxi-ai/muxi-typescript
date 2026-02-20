@@ -99,7 +99,7 @@ Error types: `AuthenticationError`, `AuthorizationError`, `NotFoundError`, `Vali
 | Identifiers | `getUserIdentifiers`, `getUserIdentifiersForUser`, `linkUserIdentifier`, `unlinkUserIdentifier` |
 | Triggers/SOP | `getTriggers`, `getTrigger`, `fireTrigger`, `getSops`, `getSop` |
 | Audit | `getAuditLog`, `clearAuditLog` |
-| Config | `getStatus`, `getConfig`, `getFormationInfo`, `getAsyncConfig`, `getA2AConfig`, `getLoggingConfig`, `getLoggingDestinations`, `getOverlordConfig`, `getOverlordPersona`, `getLlmSettings` |
+| Config | `getStatus`, `getConfig`, `getFormationInfo`, `getAsyncConfig`, `getA2AConfig`, `getLoggingConfig`, `getLoggingDestinations`, `getOverlordConfig`, `getOverlordSoul`, `getLlmSettings` |
 | Async | `getAsyncJobs`, `getAsyncJob`, `cancelAsyncJob` |
 | Streaming | `streamEvents`, `streamLogs`, `streamRequest` |
 | User | `resolveUser` |

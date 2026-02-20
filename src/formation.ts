@@ -280,7 +280,7 @@ export class FormationClient {
 
   // Overlord / LLM
   getOverlordConfig() { return this.transport.requestJson("GET", "/overlord", { useAdmin: true }); }
-  getOverlordPersona() { return this.transport.requestJson("GET", "/overlord/persona", { useAdmin: true }); }
+  getOverlordSoul() { return this.transport.requestJson("GET", "/overlord/soul", { useAdmin: true }); }
   getLlmSettings() { return this.transport.requestJson("GET", "/llm/settings", { useAdmin: true }); }
 
   // Triggers / SOP / Audit
