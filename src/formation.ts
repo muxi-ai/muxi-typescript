@@ -261,6 +261,11 @@ export class FormationClient {
     return this.transport.requestJson("POST", "/scheduler/jobs", { useAdmin: true, body: { type: jobType, schedule, message, user_id: userId } });
   }
   deleteSchedulerJob(jobId: string) { return this.transport.requestJson("DELETE", `/scheduler/jobs/${jobId}`, { useAdmin: true }); }
+  updateSchedulerJob(jobId: string, updates: { message?: string; schedule?: string; title?: string }) {
+    return this.transport.requestJson("PUT", `/scheduler/jobs/${jobId}`, { useAdmin: true, body: updates });
+  }
+  pauseSchedulerJob(jobId: string) { return this.transport.requestJson("POST", `/scheduler/jobs/${jobId}/pause`, { useAdmin: true }); }
+  resumeSchedulerJob(jobId: string) { return this.transport.requestJson("POST", `/scheduler/jobs/${jobId}/resume`, { useAdmin: true }); }
 
   // Async / logging / a2a
   getAsyncConfig() { return this.transport.requestJson("GET", "/async", { useAdmin: true }); }
