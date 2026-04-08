@@ -96,9 +96,6 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@latest
-
       - name: Compute next version
         id: version
         run: |
