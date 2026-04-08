@@ -94,7 +94,12 @@ jobs:
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+
+      - name: Prepare npm for trusted publishing
+        run: |
+          EMPTY_NPMRC="$RUNNER_TEMP/empty-npmrc"
+          : > "$EMPTY_NPMRC"
+          echo "NPM_CONFIG_USERCONFIG=$EMPTY_NPMRC" >> "$GITHUB_ENV"
 
       - name: Compute next version
         id: version
@@ -142,7 +147,10 @@ jobs:
         run: npm run build
 
       - name: Publish to npm
-        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ""
+          NPM_TOKEN: ""
+        run: npx -y npm@11.6.2 publish --access public
 
       - name: Commit version bump
         run: |
