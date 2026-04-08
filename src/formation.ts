@@ -57,6 +57,40 @@ async function parseJson(resp: Response) {
   }
 }
 
+interface SseFrame {
+  event?: string;
+  data?: string;
+}
+
+function parseSseField(line: string) {
+  const idx = line.indexOf(":");
+  if (idx < 0) return { field: line, value: "" };
+  const field = line.slice(0, idx);
+  let value = line.slice(idx + 1);
+  if (value.startsWith(" ")) value = value.slice(1);
+  return { field, value };
+}
+
+function parseSsePayload(payload?: string) {
+  if (payload === undefined) return undefined;
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return payload;
+  }
+}
+
+function toSseStreamError(payload?: string) {
+  const parsed = parseSsePayload(payload);
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const details = parsed as Record<string, unknown>;
+    const code = String(details.type || details.code || details.error || "STREAM_ERROR");
+    const message = String(details.error || details.message || "stream error");
+    return new MuxiError(code, message, 0, details);
+  }
+  return new MuxiError("STREAM_ERROR", payload || "stream error", 0, payload ? { error: payload } : undefined);
+}
+
 class FormationTransport {
   private readonly baseUrl: string;
   private readonly adminKey?: string;
@@ -148,7 +182,7 @@ class FormationTransport {
     }
   }
 
-  async *streamSse(method: string, path: string, opts: { params?: Record<string, any>; body?: any; useAdmin: boolean; userId?: string; headers?: Record<string, string> }): AsyncGenerator<any, void, void> {
+  private async *streamSseFrames(method: string, path: string, opts: { params?: Record<string, any>; body?: any; useAdmin: boolean; userId?: string; headers?: Record<string, string> }): AsyncGenerator<SseFrame, void, void> {
     const { url, fullPath } = buildUrl(this.baseUrl, path, opts.params);
     const headers = this.headers(opts.useAdmin, opts.userId, {
       Accept: "text/event-stream",
@@ -165,33 +199,89 @@ class FormationTransport {
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    let eventType: string | undefined;
+    let dataParts: string[] = [];
+
+    const flush = (): SseFrame | undefined => {
+      if (eventType === undefined && dataParts.length === 0) return undefined;
+      const frame: SseFrame = {
+        ...(eventType !== undefined ? { event: eventType } : {}),
+        ...(dataParts.length > 0 ? { data: dataParts.join("\n") } : {}),
+      };
+      eventType = undefined;
+      dataParts = [];
+      return frame;
+    };
+
+    const processLine = (rawLine: string): SseFrame | undefined => {
+      const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+      if (!line) return flush();
+      if (line.startsWith(":")) return undefined;
+      const { field, value } = parseSseField(line);
+      if (field === "event") {
+        eventType = value;
+      } else if (field === "data") {
+        dataParts.push(value);
+      }
+      return undefined;
+    };
+
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+      if (value) buffer += decoder.decode(value, { stream: !done });
       let idx;
       while ((idx = buffer.indexOf("\n")) >= 0) {
-        const line = buffer.slice(0, idx).trimEnd();
+        const frame = processLine(buffer.slice(0, idx));
         buffer = buffer.slice(idx + 1);
-        if (!line) continue;
-        if (line.startsWith("data:")) {
-          const payload = line.slice(5).trim();
-          if (!payload) continue;
-          try {
-            yield JSON.parse(payload);
-          } catch {
-            yield payload;
-          }
-        }
+        if (frame) yield frame;
       }
+      if (done) break;
     }
-    if (buffer.trim()) {
-      const payload = buffer.trim();
-      try {
-        yield JSON.parse(payload);
-      } catch {
-        yield payload;
+
+    if (buffer.length > 0) {
+      const frame = processLine(buffer);
+      if (frame) yield frame;
+    }
+
+    const finalFrame = flush();
+    if (finalFrame) {
+      yield finalFrame;
+    }
+  }
+
+  async *streamSse(method: string, path: string, opts: { params?: Record<string, any>; body?: any; useAdmin: boolean; userId?: string; headers?: Record<string, string> }): AsyncGenerator<any, void, void> {
+    for await (const frame of this.streamSseFrames(method, path, opts)) {
+      if (frame.data === undefined) continue;
+      yield parseSsePayload(frame.data);
+    }
+  }
+
+  async *streamChatSse(method: string, path: string, opts: { params?: Record<string, any>; body?: any; useAdmin: boolean; userId?: string; headers?: Record<string, string> }): AsyncGenerator<any, void, void> {
+    for await (const frame of this.streamSseFrames(method, path, opts)) {
+      if (frame.event === "error") {
+        throw toSseStreamError(frame.data);
       }
+
+      const eventType = frame.event && frame.event !== "message" ? frame.event : undefined;
+      const payload = parseSsePayload(frame.data);
+
+      if (payload === undefined) {
+        if (eventType) yield { type: eventType };
+        continue;
+      }
+
+      if (!eventType) {
+        yield payload;
+        continue;
+      }
+
+      if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+        const chunk = payload as Record<string, any>;
+        yield chunk.type === undefined ? { ...chunk, type: eventType } : chunk;
+        continue;
+      }
+
+      yield { type: eventType, data: payload };
     }
   }
 }
@@ -226,11 +316,11 @@ export class FormationClient {
   // Chat
   chat(payload: Record<string, any>, userId = "") { return this.transport.requestJson("POST", "/chat", { useAdmin: false, body: payload, userId }); }
   chatStream(payload: Record<string, any>, userId = "") {
-    return this.transport.streamSse("POST", "/chat", { useAdmin: false, body: { ...payload, stream: true }, userId });
+    return this.transport.streamChatSse("POST", "/chat", { useAdmin: false, body: { ...payload, stream: true }, userId });
   }
   audioChat(payload: Record<string, any>, userId = "") { return this.transport.requestJson("POST", "/audiochat", { useAdmin: false, body: payload, userId }); }
   audioChatStream(payload: Record<string, any>, userId = "") {
-    return this.transport.streamSse("POST", "/audiochat", { useAdmin: false, body: { ...payload, stream: true }, userId });
+    return this.transport.streamChatSse("POST", "/audiochat", { useAdmin: false, body: { ...payload, stream: true }, userId });
   }
 
   // Sessions / requests
