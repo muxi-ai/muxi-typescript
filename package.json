@@ -1,6 +1,6 @@
 {
   "name": "@muxi-ai/muxi-typescript",
-  "version": "0.20260514.0",
+  "version": "1.0.0",
   "description": "Official MUXI SDK for TypeScript",
   "license": "Apache-2.0",
   "type": "module",
