@@ -58,6 +58,27 @@ test("Formation chat stream ignores keepalives and surfaces done", async () => {
   });
 });
 
+test("Formation chat stream decodes ui widget frames", async () => {
+  const body = 'data: {"type":"text","text":"Pick one."}\n\n' +
+    'event: ui\n' +
+    'data: {"ui":[{"type":"options","id":"w1","prompt":"Which region?","options":[{"value":"us","label":"United States"}]},{"type":"action_link","id":"w2","label":"Dashboard","url":"https://example.com"}]}\n\n' +
+    'event: done\n\n';
+
+  await withMockedFetch(body, async () => {
+    const fc = new FormationClient({ formationId: "f", baseUrl: "http://example.com", clientKey: "client-key" });
+    const chunks = [];
+    for await (const chunk of fc.chatStream({ message: "stream" })) {
+      chunks.push(chunk);
+    }
+    assert.equal(chunks.length, 3);
+    assert.equal(chunks[1].type, "ui");
+    assert.equal(chunks[1].ui.length, 2);
+    assert.equal(chunks[1].ui[0].type, "options");
+    assert.equal(chunks[1].ui[0].options[0].label, "United States");
+    assert.equal(chunks[1].ui[1].url, "https://example.com");
+  });
+});
+
 test("Formation chat stream surfaces route-level errors", async () => {
   await withMockedFetch('event: error\ndata: {"error":"boom","type":"RUNTIME_ERROR"}\n\n', async () => {
     const fc = new FormationClient({ formationId: "f", baseUrl: "http://example.com", clientKey: "client-key" });

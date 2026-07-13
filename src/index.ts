@@ -1,5 +1,5 @@
 export { ServerClient, type ServerClientOptions } from "./server.js";
-export { FormationClient, type FormationClientOptions } from "./formation.js";
+export { FormationClient, type FormationClientOptions, type UIWidget, type UIOption } from "./formation.js";
 export { MuxiError, ConnectionError } from "./errors.js";
 export { version } from "./version.js";
 export { generateUUID, getClientInfo } from "./platform.js";

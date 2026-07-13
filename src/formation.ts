@@ -62,6 +62,29 @@ interface SseFrame {
   data?: string;
 }
 
+/** One selectable option of an options widget. */
+export interface UIOption {
+  value: unknown;
+  label: string;
+}
+
+/**
+ * One entry of the response envelope's optional `ui` array, delivered on
+ * chat streams as an `event: ui` frame (yielded as `{ type: "ui", ui: [...] }`)
+ * before `event: done`. Consumers should ignore unknown widget types
+ * (progressive enhancement).
+ */
+export interface UIWidget {
+  type: "options" | "action_link" | "mcp_resource" | (string & {});
+  id: string;
+  prompt?: string;
+  options?: UIOption[];
+  label?: string;
+  url?: string;
+  resource?: string;
+  mime_type?: string;
+}
+
 function parseSseField(line: string) {
   const idx = line.indexOf(":");
   if (idx < 0) return { field: line, value: "" };

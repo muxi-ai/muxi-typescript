@@ -14,6 +14,25 @@ test("unwrapEnvelope returns plain data and preserves request/timestamp", () => 
   assert.equal(out.timestamp, 123);
 });
 
+test("unwrapEnvelope preserves echoed idempotency_key", () => {
+  const env = {
+    data: { foo: "bar" },
+    request: { id: "req-1", idempotency_key: "idem-42" },
+    timestamp: 123,
+  };
+  const out = unwrapEnvelope(env) as any;
+  assert.equal(out.idempotency_key, "idem-42");
+});
+
+test("unwrapEnvelope omits idempotency_key when absent", () => {
+  const env = {
+    data: { foo: "bar" },
+    request: { id: "req-1" },
+  };
+  const out = unwrapEnvelope(env) as any;
+  assert.equal("idempotency_key" in out, false);
+});
+
 test("unwrapEnvelope passthrough when no data field", () => {
   const obj = { ok: true };
   assert.deepStrictEqual(unwrapEnvelope(obj), obj);
