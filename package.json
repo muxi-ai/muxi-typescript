@@ -40,7 +40,7 @@
   "homepage": "https://github.com/muxi-ai/muxi-typescript#readme",
   "author": "MUXI Team <dev@muxi.org>",
   "devDependencies": {
-    "@types/node": "^25.0.10",
+    "@types/node": "^26.1.1",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }
